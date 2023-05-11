@@ -1,0 +1,80 @@
+import requests
+import json
+import tkinter as tk
+from tkinter import scrolledtext
+from datetime import datetime
+
+# Define the list of airport codes
+airports = ['KOKC', 'KPWA', 'KTIK', 'KOUN', 'KGOK']
+
+def fetch_weather():
+    # Clear the text widget
+    text_widget.delete('1.0', tk.END)
+
+    # For each airport code, send a GET request to the AVWX API
+    for airport in airports:
+        url = f'https://avwx.rest/api/metar/{airport}'
+        headers = {'Authorization': '_aXUbcGDw8ZG3dqjqZaIniGomrbbCkO08aG4kCh5Syk'}
+        response = requests.get(url, headers=headers)
+
+        # Check that the request was successful
+        if response.status_code == 200:
+            # Parse the JSON response
+            data = json.loads(response.text)
+
+            # Print the airport code and conditions
+            text_widget.insert(tk.END, f"Airport: {airport}\n")
+            text_widget.insert(tk.END, f"Flight Rules: {data['flight_rules']}\n")
+
+            # Check and print the cloud ceiling
+            if 'clouds' in data and data['clouds']:
+                text_widget.insert(tk.END, "Clouds:\n")
+                for cloud in data['clouds']:
+                    text_widget.insert(tk.END, f"  - {cloud['repr']}: {cloud['type']} at {cloud['altitude']*100} feet\n")
+            else:
+                text_widget.insert(tk.END, "No specific cloud conditions reported.\n")
+            
+            # Check and print the visibility
+            if 'visibility' in data:
+                text_widget.insert(tk.END, f"Visibility: {data['visibility']['repr']} statute miles\n")
+            else:
+                text_widget.insert(tk.END, "No specific visibility conditions reported.\n")
+                
+            # Check and print the winds
+            if 'wind_speed' in data and 'wind_direction' in data:
+                text_widget.insert(tk.END, f"Wind: {data['wind_direction']['repr']}° at {data['wind_speed']['repr']} knots\n")
+            else:
+                text_widget.insert(tk.END, "No specific wind conditions reported.\n")
+            
+            text_widget.insert(tk.END, "------------------------\n")
+        else:
+            text_widget.insert(tk.END, f"Failed to fetch data for {airport}\n")
+            
+    # Update the timestamp label
+    timestamp_label.config(text=f"Last Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
+# Create a new tkinter window
+window = tk.Tk()
+
+# Add a text widget to display the weather data
+text_widget = scrolledtext.ScrolledText(window)
+text_widget.grid(row=0, column=0, sticky="nsew", columnspan=2)
+
+# Add a button that fetches the weather data when clicked
+button = tk.Button(window, text="Refresh", command=fetch_weather, relief="raised")
+button.grid(row=1, column=0, sticky="ew")
+
+# Add a label to display the last update time
+timestamp_label = tk.Label(window, text="")
+timestamp_label.grid(row=1, column=1, sticky="e")
+
+# Configure the grid to expand properly when the window is resized
+window.grid_rowconfigure(0, weight=1)
+window.grid_columnconfigure(0, weight=1)
+
+# Fetch the initial weather data
+fetch_weather()
+
+# Start the tkinter event loop
+window.mainloop()
+           

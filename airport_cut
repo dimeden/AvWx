@@ -1,0 +1,25 @@
+import pandas as pd
+from geopy.distance import geodesic
+import numpy as np
+
+# Define location of Oklahoma City
+oklahoma_city = (35.4676, -97.5164)
+
+# Load the CSV file
+df = pd.read_csv('airports_new.csv')
+
+# Function to calculate distance
+def calculate_distance(row):
+    return geodesic((row['airport latitude'], row['airport longitude']), oklahoma_city).nm
+
+# Calculate distances
+df['distance'] = df.apply(calculate_distance, axis=1)
+
+# Filter the dataframe
+df = df[df['distance'] <= 250]
+
+# Drop the distance column
+df = df.drop(columns=['distance'])
+
+# Save the new CSV file
+df.to_csv('airport_cut.csv', index=False)
